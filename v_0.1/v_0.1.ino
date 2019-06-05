@@ -36,6 +36,11 @@
 #include <WiFiClient.h>
 #include <BlynkSimpleEsp32.h>
 #include <SimpleTimer.h>
+#include <SPI.h>
+//#include <Ethernet.h>
+//#include <BlynkSimpleEthernet.h>
+#include <TimeLib.h>
+#include <WidgetRTC.h>
 
 // You should get Auth Token in the Blynk App.
 // Go to the Project Settings (nut icon).
@@ -46,27 +51,71 @@ char auth[] = "9b15e24a7d5e406ca7270cc23b35e91f";
 char ssid[] = "CASATINA";
 char pass[] = "Minchiachefamiglia!3";
 SimpleTimer timer;
-int v = 0;
+const int trigPin = 2;
+const int echoPin = 5;
+const float AreaBott = 41.83265;
+const float volBott = 836.653;
+const int mlBott = 750;
+long duration;
+float volNow, mlNow, bevuti;
+int distanceCm, distanceInch;
 
 //BlynkTimer timer;
+WidgetRTC rtc;
 
 // This function sends Arduino's up time every second to Virtual Pin (5).
 // In the app, Widget's reading frequency should be set to PUSH. This means
 // that you define how often to send data to Blynk App.
 BLYNK_CONNECTED(){
   Blynk.setProperty(V5, "min", 0);//Set the gauge min value
-  Blynk.setProperty(V5, "max", 500);//Set the gauge max value
+  Blynk.setProperty(V5, "max", 2000);//Set the gauge max value
+  rtc.begin();
 }
 void test()
 {
-  v= v+1;
+  
   // You can send any value at any time.
   // Please don't send more that 10 values per second.
-  Blynk.virtualWrite(V5, v);
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  duration = pulseIn(echoPin, HIGH);
+  distanceCm= duration*0.034/2;
+  distanceInch = duration*0.0133/2;
+  
+  volNow = AreaBott * distanceCm;
+  bevuti= (volNow * mlBott)/ volBott;
+  mlNow= mlBott - bevuti;
+  Serial.println(distanceCm);
+  Blynk.virtualWrite(V5, bevuti);
+}
+
+// Digital clock display of the time
+void clockDisplay()
+{
+  // You can call hour(), minute(), ... at any time
+  // Please see Time library examples for details
+
+  String currentTime = String(hour()) + ":" + minute() + ":" + second();
+  String currentDate = String(day()) + " " + month() + " " + year();
+  Serial.print("Current time: ");
+  Serial.print(currentTime);
+  Serial.print(" ");
+  Serial.print(currentDate);
+  Serial.println();
+
+  // Send time to the App
+  Blynk.virtualWrite(V1, currentTime);
+  // Send date to the App
+  Blynk.virtualWrite(V2, currentDate);
 }
 
 void setup()
 {
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
   // Debug console
   Serial.begin(9600);
 
@@ -77,6 +126,10 @@ void setup()
 
   // Setup a function to be called every second
   timer.setInterval(1000L, test);
+  setSyncInterval(10 * 60); // Sync interval in seconds (10 minutes)
+
+  // Display digital clock every 10 seconds
+  timer.setInterval(10000L, clockDisplay);
 }
 
 void loop()
