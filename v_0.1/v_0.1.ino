@@ -59,6 +59,8 @@ const int mlBott = 750;
 long duration;
 float volNow, mlNow, bevuti_live, bevutiOggi;
 int distanceCm, distanceInch;
+int lastData;
+String onOff;
 
 //BlynkTimer timer;
 WidgetRTC rtc;
@@ -68,11 +70,12 @@ WidgetRTC rtc;
 // that you define how often to send data to Blynk App.
 BLYNK_CONNECTED(){
   bevutiOggi = 0;
+  lastData = 0;
   Blynk.setProperty(V5, "min", 0);//Set the gauge min value
   Blynk.setProperty(V5, "max", 2000);//Set the gauge max value
   rtc.begin();
 }
-void test()
+void checkDrinkedWater()
 {
   
   // You can send any value at any time.
@@ -83,12 +86,30 @@ void test()
   delayMicroseconds(10);
   digitalWrite(trigPin, LOW);
   duration = pulseIn(echoPin, HIGH);
-  distanceCm= duration*0.034/2;
-  distanceInch = duration*0.0133/2;
   
+  distanceCm= duration*0.034/2;
   volNow = AreaBott * distanceCm;
   bevuti_live= (volNow * mlBott)/ volBott;
   mlNow= mlBott - bevuti_live;
+  Serial.println(distanceCm);
+  int pos = onOff.indexOf("on"); 
+
+ /*if(pos != -1){
+     Serial.println("acceso");
+  }*/
+  if(lastData != bevuti_live && pos != -1 && distanceCm <= 22 && distanceCm >=3){
+    Serial.println("acceso");
+      if (lastData <= 749){
+      bevutiOggi = lastData + (bevuti_live - lastData);
+      lastData = bevutiOggi;
+      onOff = "off";
+      }else{
+      bevutiOggi = lastData + bevuti_live;
+      lastData = bevutiOggi;
+      onOff = "off";
+      }
+      
+    }
   Blynk.virtualWrite(V5, bevutiOggi);
 }
 
@@ -120,15 +141,19 @@ void setup()
   //Blynk.begin(auth, ssid, pass, IPAddress(192,168,1,100), 8080);
 
   // Setup a function to be called every second
-  timer.setInterval(1000L, test);
+  timer.setInterval(1000L, checkDrinkedWater);
   setSyncInterval(10 * 60); // Sync interval in seconds (10 minutes)
 
   // Display digital clock every 10 seconds
   timer.setInterval(10000L, clockDisplay);
 }
 
-void loop()
-{
+void loop(){
+
   Blynk.run();
   timer.run(); // Initiates BlynkTimer
+  while(Serial.available()) {
+  onOff= Serial.readString();// read the incoming data as string
+}
+
 }
