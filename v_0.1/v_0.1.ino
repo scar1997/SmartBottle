@@ -57,7 +57,7 @@ const float AreaBott = 41.83265;
 const float volBott = 836.653;
 const int mlBott = 750;
 long duration;
-float volNow, mlNow, bevuti;
+float volNow, mlNow, bevuti_live, bevutiOggi;
 int distanceCm, distanceInch;
 
 //BlynkTimer timer;
@@ -67,6 +67,7 @@ WidgetRTC rtc;
 // In the app, Widget's reading frequency should be set to PUSH. This means
 // that you define how often to send data to Blynk App.
 BLYNK_CONNECTED(){
+  bevutiOggi = 0;
   Blynk.setProperty(V5, "min", 0);//Set the gauge min value
   Blynk.setProperty(V5, "max", 2000);//Set the gauge max value
   rtc.begin();
@@ -86,10 +87,9 @@ void test()
   distanceInch = duration*0.0133/2;
   
   volNow = AreaBott * distanceCm;
-  bevuti= (volNow * mlBott)/ volBott;
-  mlNow= mlBott - bevuti;
-  Serial.println(distanceCm);
-  Blynk.virtualWrite(V5, bevuti);
+  bevuti_live= (volNow * mlBott)/ volBott;
+  mlNow= mlBott - bevuti_live;
+  Blynk.virtualWrite(V5, bevutiOggi);
 }
 
 // Digital clock display of the time
@@ -105,11 +105,6 @@ void clockDisplay()
   Serial.print(" ");
   Serial.print(currentDate);
   Serial.println();
-
-  // Send time to the App
-  Blynk.virtualWrite(V1, currentTime);
-  // Send date to the App
-  Blynk.virtualWrite(V2, currentDate);
 }
 
 void setup()
