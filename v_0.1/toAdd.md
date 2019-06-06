@@ -5,3 +5,8 @@
 3. Aggiunger notifiche (es. Non bevi da tanto - l'acqua sta per terminare)
 4. Aggiungere controllo gyro.
 
+#To Fix
+1. Sistemare controllo quando si beve meno di 750 ml
+2. Sistemare controllo su quando si riempie dell'acqua
+3. Lo start deve inizare quando inserisci il tuo peso e qui bisogna settare gli storici
+

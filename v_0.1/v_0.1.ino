@@ -59,7 +59,7 @@ const int mlBott = 750;
 long duration;
 float volNow, mlNow, bevuti_live, bevutiOggi;
 int distanceCm, distanceInch;
-int lastData;
+int lastData, lastMl;
 String onOff;
 
 //BlynkTimer timer;
@@ -71,6 +71,7 @@ WidgetRTC rtc;
 BLYNK_CONNECTED(){
   bevutiOggi = 0;
   lastData = 0;
+  lastMl = mlNow;
   Blynk.setProperty(V5, "min", 0);//Set the gauge min value
   Blynk.setProperty(V5, "max", 2000);//Set the gauge max value
   rtc.begin();
@@ -97,18 +98,24 @@ void checkDrinkedWater()
  /*if(pos != -1){
      Serial.println("acceso");
   }*/
+
   if(lastData != bevuti_live && pos != -1 && distanceCm <= 22 && distanceCm >=3){
     Serial.println("acceso");
       if (lastData <= 749){
       bevutiOggi = lastData + (bevuti_live - lastData);
       lastData = bevutiOggi;
+      lastMl = mlNow;
       onOff = "off";
       }else{
       bevutiOggi = lastData + bevuti_live;
       lastData = bevutiOggi;
+      lastMl = mlNow;
       onOff = "off";
       }
-      
+      /*if(mlNow > lastMl){
+      bevutiOggi = bevutiOggi - (mlNow - lastMl);
+      lastData = bevutiOggi;
+      }*/
     }
   Blynk.virtualWrite(V5, bevutiOggi);
 }
