@@ -59,8 +59,10 @@ const int mlBott = 750;
 long duration;
 float volNow, mlNow, bevuti_live, bevutiOggi;
 int distanceCm, distanceInch;
-int lastData, lastMl;
+float lastData, lastMl, lastDrinkedMl;
 String onOff;
+float scarto = 0;
+bool riempito;
 
 //BlynkTimer timer;
 WidgetRTC rtc;
@@ -72,9 +74,11 @@ BLYNK_CONNECTED(){
   bevutiOggi = 0;
   lastData = 0;
   lastMl = mlNow;
+  scarto = 0;
   Blynk.setProperty(V5, "min", 0);//Set the gauge min value
   Blynk.setProperty(V5, "max", 2000);//Set the gauge max value
   rtc.begin();
+  Blynk.virtualWrite(V5, bevutiOggi);
 }
 void checkDrinkedWater()
 {
@@ -94,30 +98,46 @@ void checkDrinkedWater()
   mlNow= mlBott - bevuti_live;
   Serial.println(distanceCm);
   int pos = onOff.indexOf("on"); 
+  //Serial.println(pos);
+  Serial.print("b_live: ");
+  Serial.println(bevuti_live);
+  Serial.print("ultimi bevuti: ");
+  Serial.println(lastDrinkedMl);
 
- /*if(pos != -1){
-     Serial.println("acceso");
+  /*if(mlNow > lastMl && mlNow > 0){
+    scarto = mlNow - lastMl;
+    Serial.print("scarto: ");
+    Serial.println(scarto);
   }*/
-
-  if(lastData != bevuti_live && pos != -1 && distanceCm <= 22 && distanceCm >=3){
-    Serial.println("acceso");
-      if (lastData <= 749){
+  riempito = false;
+  if(lastDrinkedMl != bevuti_live && pos != -1 && distanceCm <= 22 && distanceCm >=2){
+    Serial.println(riempito);
+      /*if (lastData <= 749){
       bevutiOggi = lastData + (bevuti_live - lastData);
       lastData = bevutiOggi;
       lastMl = mlNow;
       onOff = "off";
-      }else{
-      bevutiOggi = lastData + bevuti_live;
-      lastData = bevutiOggi;
-      lastMl = mlNow;
-      onOff = "off";
+      }else{*/
+      if(mlNow > lastMl){
+        riempito = true;
+        //scarto = mlNow - lastMl;
+        lastMl = mlNow;
+        lastDrinkedMl = 0;
       }
-      /*if(mlNow > lastMl){
-      bevutiOggi = bevutiOggi - (mlNow - lastMl);
-      lastData = bevutiOggi;
-      }*/
+      Serial.println(riempito);
+      if(!riempito){
+        Serial.println("entrato");
+        bevutiOggi = lastData + (bevuti_live - lastDrinkedMl); //(bevuti_live - scarto);
+        lastData = bevutiOggi;
+        lastDrinkedMl = bevuti_live;
+        lastMl = mlNow;
+        scarto = 0;
+        Blynk.virtualWrite(V5, bevutiOggi);
+      }
+      onOff = "off";
     }
-  Blynk.virtualWrite(V5, bevutiOggi);
+
+  
 }
 
 // Digital clock display of the time
