@@ -3,11 +3,15 @@
 1. Input del tuo peso che va a modificare il max del gauge del progresso
 2. Aggiungere SuperChart per lo storico
 3. Aggiunger notifiche (es. Non bevi da tanto - l'acqua sta per terminare)
-4. Aggiungere controllo gyro.
 5. Implementare bluetooth
+6. Mettere temperatura
+7. Aggiungere feedbak visivi led/ agg. vibrazione(?)
+
 
 #To Fix
-1. Sistemare controllo quando si beve meno di 750 ml
 2. Sistemare controllo su quando si riempie dell'acqua
 3. Lo start deve inizare quando inserisci il tuo peso e qui bisogna settare gli storici
+4. Salvare i dati da qualche parte per quando si spegne arduino
+5. Aggiungere ml al gauge
+6. In un nuovo giorno la battoglia si deve aggiornare a 0 bevuti
 

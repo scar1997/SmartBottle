@@ -41,6 +41,10 @@
 //#include <BlynkSimpleEthernet.h>
 #include <TimeLib.h>
 #include <WidgetRTC.h>
+//Gyro
+#include<Wire.h>
+const int MPU_addr=0x68; // I2C address of the MPU-6050
+int16_t AcX,AcY,AcZ,Tmp,GyX,GyY,GyZ;
 
 // You should get Auth Token in the Blynk App.
 // Go to the Project Settings (nut icon).
@@ -48,8 +52,8 @@ char auth[] = "9b15e24a7d5e406ca7270cc23b35e91f";
 
 // Your WiFi credentials.
 // Set password to "" for open networks.
-char ssid[] = "CASATINA";
-char pass[] = "Minchiachefamiglia!3";
+char ssid[] = "LAZIO_INNOVA_GUEST"; // CASATINA - wifi-gratis - LAZIO_INNOVA_GUEST
+char pass[] = "Li-Psw-16";//Minchiachefamiglia!3 - culocane97 - Li-Psw-16
 SimpleTimer timer;
 const int trigPin = 2;
 const int echoPin = 5;
@@ -62,7 +66,7 @@ int distanceCm, distanceInch;
 float lastData, lastMl, lastDrinkedMl;
 String onOff;
 float scarto = 0;
-bool riempito;
+bool riempito,dritta;
 
 //BlynkTimer timer;
 WidgetRTC rtc;
@@ -80,6 +84,37 @@ BLYNK_CONNECTED(){
   rtc.begin();
   Blynk.virtualWrite(V5, bevutiOggi);
 }
+
+void checkStationary(){
+  Wire.beginTransmission(MPU_addr);
+  Wire.write(0x3B); // starting with register 0x3B (ACCEL_XOUT_H)
+  Wire.endTransmission(false);
+  Wire.requestFrom(MPU_addr,14,true); // request a total of 14 registers
+
+  
+
+  AcX=Wire.read()<<8|Wire.read(); // 0x3B (ACCEL_XOUT_H) & 0x3C (ACCEL_XOUT_L)
+  AcY=Wire.read()<<8|Wire.read(); // 0x3D (ACCEL_YOUT_H) & 0x3E (ACCEL_YOUT_L)
+  AcZ=Wire.read()<<8|Wire.read(); // 0x3F (ACCEL_ZOUT_H) & 0x40 (ACCEL_ZOUT_L)
+  Tmp=Wire.read()<<8|Wire.read(); // 0x41 (TEMP_OUT_H) & 0x42 (TEMP_OUT_L)
+  GyX=Wire.read()<<8|Wire.read(); // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
+  GyY=Wire.read()<<8|Wire.read(); // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
+  GyZ=Wire.read()<<8|Wire.read(); // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
+  dritta=false;
+  if(AcX>=450 && AcX<=550 && AcY>=50 && AcY<=150 && AcZ>=15900 && AcZ<=16100 ){
+    Serial.println("la bott. è dritta");
+    dritta = !dritta;
+  }
+
+  Serial.print("AcX = "); Serial.print(AcX);
+  Serial.print(" | AcY = "); Serial.print(AcY);
+  Serial.print(" | AcZ = "); Serial.print(AcZ);
+  Serial.print(" | Tmp = "); Serial.print(Tmp/340.00+36.53); //equation for temperature in degrees C from datasheet
+  Serial.print(" | GyX = "); Serial.print(GyX);
+  Serial.print(" | GyY = "); Serial.print(GyY);
+  Serial.print(" | GyZ = "); Serial.println(GyZ);
+}
+
 void checkDrinkedWater()
 {
   
@@ -110,9 +145,10 @@ void checkDrinkedWater()
     Serial.println(scarto);
   }*/
   riempito = false;
-  if(lastDrinkedMl != bevuti_live && pos != -1 && distanceCm <= 22 && distanceCm >=2){
-    Serial.println(riempito);
-      /*if (lastData <= 749){
+  if(lastDrinkedMl != bevuti_live /*&& pos != -1*/ && distanceCm <= 22 && distanceCm >=2 && dritta){
+    Serial.println("entrato");
+   /* Serial.println(riempito);
+      if (lastData <= 749){
       bevutiOggi = lastData + (bevuti_live - lastData);
       lastData = bevutiOggi;
       lastMl = mlNow;
@@ -124,9 +160,8 @@ void checkDrinkedWater()
         lastMl = mlNow;
         lastDrinkedMl = 0;
       }
-      Serial.println(riempito);
+     // Serial.println(riempito);
       if(!riempito){
-        Serial.println("entrato");
         bevutiOggi = lastData + (bevuti_live - lastDrinkedMl); //(bevuti_live - scarto);
         lastData = bevutiOggi;
         lastDrinkedMl = bevuti_live;
@@ -148,15 +183,22 @@ void clockDisplay()
 
   String currentTime = String(hour()) + ":" + minute() + ":" + second();
   String currentDate = String(day()) + " " + month() + " " + year();
-  Serial.print("Current time: ");
+ /* Serial.print("Current time: ");
   Serial.print(currentTime);
   Serial.print(" ");
   Serial.print(currentDate);
-  Serial.println();
+  Serial.println();*/
 }
 
 void setup()
 {
+  //Gyro
+  Wire.begin();
+  Wire.beginTransmission(MPU_addr);
+  Wire.write(0x6B); // PWR_MGMT_1 register
+  Wire.write(0); // set to zero (wakes up the MPU-6050)
+  Wire.endTransmission(true);
+  
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
   // Debug console
@@ -170,6 +212,7 @@ void setup()
   // Setup a function to be called every second
   timer.setInterval(1000L, checkDrinkedWater);
   setSyncInterval(10 * 60); // Sync interval in seconds (10 minutes)
+  timer.setInterval(1000L, checkStationary);
 
   // Display digital clock every 10 seconds
   timer.setInterval(10000L, clockDisplay);
