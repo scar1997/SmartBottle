@@ -32,9 +32,11 @@
 #define BLYNK_PRINT Serial
 
 
-#include <WiFi.h>
-#include <WiFiClient.h>
-#include <BlynkSimpleEsp32.h>
+
+//#include <WiFi.h>
+//#include <WiFiClient.h>
+#include <ESP8266WiFi.h>
+#include <BlynkSimpleEsp8266.h>
 #include <SimpleTimer.h>
 #include <SPI.h>
 //#include <Ethernet.h>
@@ -55,14 +57,14 @@ char auth[] = "9b15e24a7d5e406ca7270cc23b35e91f";
 char ssid[] = "LAZIO_INNOVA_GUEST"; // CASATINA - wifi-gratis - LAZIO_INNOVA_GUEST
 char pass[] = "Li-Psw-16";//Minchiachefamiglia!3 - culocane97 - Li-Psw-16
 SimpleTimer timer;
-const int trigPin = 2;
-const int echoPin = 5;
+const int trigPin = 4;
+const int echoPin = 14;
 const float AreaBott = 41.83265;
 const float volBott = 836.653;
 const int mlBott = 750;
 long duration;
 float volNow, mlNow, bevuti_live, bevutiOggi;
-int distanceCm, distanceInch;
+int distanceCm, distanceInch, peso, acquaDaBere;
 float lastData, lastMl, lastDrinkedMl;
 String onOff;
 float scarto = 0;
@@ -80,26 +82,29 @@ BLYNK_CONNECTED(){
   lastMl = mlNow;
   scarto = 0;
   Blynk.setProperty(V5, "min", 0);//Set the gauge min value
-  Blynk.setProperty(V5, "max", 2000);//Set the gauge max value
   rtc.begin();
   Blynk.virtualWrite(V5, bevutiOggi);
 }
 
+BLYNK_WRITE(V4)   //Numeric Input Widget
+{
+  peso = param.asInt();
+  acquaDaBere = (peso * 0.03) * 1000;
+  Blynk.setProperty(V5, "max", acquaDaBere);//Set the gauge max value
+}
+
 void checkStationary(){
   Wire.beginTransmission(MPU_addr);
-  Wire.write(0x3B); // starting with register 0x3B (ACCEL_XOUT_H)
+  Wire.write(0x3B);  // starting with register 0x3B (ACCEL_XOUT_H)
   Wire.endTransmission(false);
-  Wire.requestFrom(MPU_addr,14,true); // request a total of 14 registers
-
-  
-
-  AcX=Wire.read()<<8|Wire.read(); // 0x3B (ACCEL_XOUT_H) & 0x3C (ACCEL_XOUT_L)
-  AcY=Wire.read()<<8|Wire.read(); // 0x3D (ACCEL_YOUT_H) & 0x3E (ACCEL_YOUT_L)
-  AcZ=Wire.read()<<8|Wire.read(); // 0x3F (ACCEL_ZOUT_H) & 0x40 (ACCEL_ZOUT_L)
-  Tmp=Wire.read()<<8|Wire.read(); // 0x41 (TEMP_OUT_H) & 0x42 (TEMP_OUT_L)
-  GyX=Wire.read()<<8|Wire.read(); // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
-  GyY=Wire.read()<<8|Wire.read(); // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
-  GyZ=Wire.read()<<8|Wire.read(); // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
+  Wire.requestFrom(MPU_addr,14,true);  // request a total of 14 registers
+  AcX=Wire.read()<<8|Wire.read();  // 0x3B (ACCEL_XOUT_H) & 0x3C (ACCEL_XOUT_L)    
+  AcY=Wire.read()<<8|Wire.read();  // 0x3D (ACCEL_YOUT_H) & 0x3E (ACCEL_YOUT_L)
+  AcZ=Wire.read()<<8|Wire.read();  // 0x3F (ACCEL_ZOUT_H) & 0x40 (ACCEL_ZOUT_L)
+  Tmp=Wire.read()<<8|Wire.read();  // 0x41 (TEMP_OUT_H) & 0x42 (TEMP_OUT_L)
+  GyX=Wire.read()<<8|Wire.read();  // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
+  GyY=Wire.read()<<8|Wire.read();  // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
+  GyZ=Wire.read()<<8|Wire.read();  // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
   dritta=false;
   if(AcX>=450 && AcX<=550 && AcY>=50 && AcY<=150 && AcZ>=15900 && AcZ<=16100 ){
     Serial.println("la bott. è dritta");
@@ -109,7 +114,7 @@ void checkStationary(){
   Serial.print("AcX = "); Serial.print(AcX);
   Serial.print(" | AcY = "); Serial.print(AcY);
   Serial.print(" | AcZ = "); Serial.print(AcZ);
-  Serial.print(" | Tmp = "); Serial.print(Tmp/340.00+36.53); //equation for temperature in degrees C from datasheet
+  Serial.print(" | Tmp = "); Serial.print(Tmp/340.00+36.53);  //equation for temperature in degrees C from datasheet
   Serial.print(" | GyX = "); Serial.print(GyX);
   Serial.print(" | GyY = "); Serial.print(GyY);
   Serial.print(" | GyZ = "); Serial.println(GyZ);
@@ -193,10 +198,10 @@ void clockDisplay()
 void setup()
 {
   //Gyro
-  Wire.begin();
+  Wire.begin(D1, D3);
   Wire.beginTransmission(MPU_addr);
-  Wire.write(0x6B); // PWR_MGMT_1 register
-  Wire.write(0); // set to zero (wakes up the MPU-6050)
+  Wire.write(0x6B);  // PWR_MGMT_1 register
+  Wire.write(0);     // set to zero (wakes up the MPU-6050)
   Wire.endTransmission(true);
   
   pinMode(trigPin, OUTPUT);

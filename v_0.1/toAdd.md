@@ -1,6 +1,4 @@
 # To Add
-
-1. Input del tuo peso che va a modificare il max del gauge del progresso
 2. Aggiungere SuperChart per lo storico
 3. Aggiunger notifiche (es. Non bevi da tanto - l'acqua sta per terminare)
 5. Implementare bluetooth
@@ -14,4 +12,7 @@
 4. Salvare i dati da qualche parte per quando si spegne arduino
 5. Aggiungere ml al gauge
 6. In un nuovo giorno la battoglia si deve aggiornare a 0 bevuti
+
+
+https://dl.espressif.com/dl/package_esp32_index.json
 
