@@ -54,21 +54,24 @@ char auth[] = "9b15e24a7d5e406ca7270cc23b35e91f";
 
 // Your WiFi credentials.
 // Set password to "" for open networks.
-char ssid[] = "LAZIO_INNOVA_GUEST"; // CASATINA - wifi-gratis - LAZIO_INNOVA_GUEST
-char pass[] = "Li-Psw-16";//Minchiachefamiglia!3 - culocane97 - Li-Psw-16
+char ssid[] = "CASATINA"; // CASATINA - wifi-gratis - LAZIO_INNOVA_GUEST
+char pass[] = "Minchiachefamiglia!3";//Minchiachefamiglia!3 - culocane97 - Li-Psw-16
 SimpleTimer timer;
 const int trigPin = 4;
 const int echoPin = 14;
-const float AreaBott = 41.83265;
-const float volBott = 836.653;
+const float AreaBott = 38.465;
+const float volBott = 692.37;
 const int mlBott = 750;
 long duration;
 float volNow, mlNow, bevuti_live, bevutiOggi;
-int distanceCm, distanceInch, peso, acquaDaBere;
+int distanceCm, distanceInch, peso, acquaDaBere,Temp, noti;
 float lastData, lastMl, lastDrinkedMl;
 String onOff;
 float scarto = 0;
 bool riempito,dritta;
+
+int LED = D7;
+
 
 //BlynkTimer timer;
 WidgetRTC rtc;
@@ -91,6 +94,28 @@ BLYNK_WRITE(V4)   //Numeric Input Widget
   peso = param.asInt();
   acquaDaBere = (peso * 0.03) * 1000;
   Blynk.setProperty(V5, "max", acquaDaBere);//Set the gauge max value
+  Blynk.virtualWrite(V7, acquaDaBere);
+}
+void led(){
+
+  
+  if(noti == 0 && distanceCm >= 12){
+     noti = 1;
+    Blynk.notify("L'acqua sta per terminare"); 
+  }
+  
+
+      
+  if(distanceCm >= 12){
+  digitalWrite(LED, LOW); // LED off
+  delay(250); // Wait 3 seconds
+  digitalWrite(LED, HIGH); // LED on
+  delay(250); // Wait 1 second
+  }else{
+    noti = 0;
+  }
+
+
 }
 
 void checkStationary(){
@@ -106,11 +131,12 @@ void checkStationary(){
   GyY=Wire.read()<<8|Wire.read();  // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
   GyZ=Wire.read()<<8|Wire.read();  // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
   dritta=false;
-  if(AcX>=450 && AcX<=550 && AcY>=50 && AcY<=150 && AcZ>=15900 && AcZ<=16100 ){
+  if(AcX>=900 && AcX<=1350 && AcY>=600 && AcY<=1000 && AcZ>=18400 && AcZ<=18700 ){
     Serial.println("la bott. è dritta");
     dritta = !dritta;
   }
-
+  Temp = ((Tmp/340.00) + 36.53)-15;
+  Blynk.virtualWrite(V6, Temp);
   Serial.print("AcX = "); Serial.print(AcX);
   Serial.print(" | AcY = "); Serial.print(AcY);
   Serial.print(" | AcZ = "); Serial.print(AcZ);
@@ -150,7 +176,7 @@ void checkDrinkedWater()
     Serial.println(scarto);
   }*/
   riempito = false;
-  if(lastDrinkedMl != bevuti_live /*&& pos != -1*/ && distanceCm <= 22 && distanceCm >=2 && dritta){
+  if(lastDrinkedMl != bevuti_live /*&& pos != -1*/ && distanceCm <= 19 && distanceCm >=7 && dritta){
     Serial.println("entrato");
    /* Serial.println(riempito);
       if (lastData <= 749){
@@ -197,6 +223,7 @@ void clockDisplay()
 
 void setup()
 {
+  pinMode(LED, OUTPUT); // Make LED pin D7 an output pin
   //Gyro
   Wire.begin(D1, D3);
   Wire.beginTransmission(MPU_addr);
@@ -218,13 +245,12 @@ void setup()
   timer.setInterval(1000L, checkDrinkedWater);
   setSyncInterval(10 * 60); // Sync interval in seconds (10 minutes)
   timer.setInterval(1000L, checkStationary);
-
+  timer.setInterval(500L, led);
   // Display digital clock every 10 seconds
   timer.setInterval(10000L, clockDisplay);
 }
 
 void loop(){
-
   Blynk.run();
   timer.run(); // Initiates BlynkTimer
   while(Serial.available()) {
